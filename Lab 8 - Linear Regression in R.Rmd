@@ -5,7 +5,102 @@ date: "November 21, 2018"
 output: html_document
 ---
 
+#### Load in Tidyverse and CSV
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+salmon <- read.csv("salmon_imports.csv")
+
 ```
 
+#####Exploratory Scatterplot
+```{r}
+
+salmon_scatter <- ggplot(salmon, aes(x=year, y=salmon_fresh))+
+  geom_point()
+
+salmon_scatter
+
+#Generally linear looking relationship so linear regressions would make sense. I have some concerns about the dips in about 2004 and 2014.
+
+```
+
+#####Linear Regression
+```{r}
+salmon_model <- lm(salmon_fresh ~ year, data = salmon)
+
+salmon_model
+
+#results in equation y = - 14982940 + 7550x
+
+
+```
+The slope in this model is 7550, showing a positive trend/increase in the number of imported each year.The y intercept is -14982940 which is concerning because a negative number of salmon imports doesn't make sense. Becuase of this, this model can't be extrapolated to find salmon imports for years prior to 1990.
+
+#####Model Diagnostics
+```{r}
+plot(salmon_model)
+
+
+#Residuals appear normally distributed on QQ plot. Residuals do not appear evenely distributed around a horizontal line on Residiuals vs. Fitted graph, so there is a concern of heteroscedacity. There do appear to be outliers
+
+par(mfrow = c(2,2))
+plot(salmon_model)
+
+```
+
+
+####Model fit and significance
+```{r}
+summary(salmon_model)
+
+# Quartiles for residuals are min-49619  Q1-6284   med2722   Q39063  max17884
+#Yint and slope are the same as on the previous chunk. Standard error is  14860. Precision limit is 696300 and 347.5. Coefficient of determination is .9478 which represents the fraction of variance in y that can be explained by x. P value for the fit of the model was 2.2e-16 which is significant.
+
+```
+
+Because p value is 2.2e-16 which is very low, year does significantly predict salmon imports. The r squared value means that 94% of variance in salmon imports can be explained by year. 6% of the variance in salmon imports is not explained by year.
+
+
+#####Finalized Graph
+```{r}
+
+salmon_final_graph <- ggplot(salmon, aes(x=year, y = salmon_fresh))+
+  geom_point()+ #make scatterplot
+  geom_smooth(method = lm, se = TRUE, size = 0.5, color = "gray20")+ #add cl smooth
+  theme_bw()+
+  scale_x_continuous(expand = c(0,0), limits = c(1990,2017))+ #format axis
+  labs(x = "Year", y= "U.S. Annual Fresh Salmon Imports\n(1,000 pounds)")
+
+salmon_final_graph
+
+```
+
+#####Predictions Using Model
+```{r}
+new_years<- data.frame(year = c(2022, 2024, 2026, 2028))
+
+new_years
+
+future_predict <- predict(salmon_model, newdata = new_years, interval = "confidence")
+
+future_predict
+
+predictions <- data.frame(new_years, future_predict)
+
+predictions
+
+```
+
+#####Parsons R
+```{r}
+salmon_pearson <- cor.test(salmon$year, salmon$salmon_fresh)
+
+salmon_pearson
+
+```
+
+The correlation coefficient is 0.97 with a p value of 2.2e-16. This shows that there is a strong positive correlation between year and salmon impacts because pearson's r value is close to one and the fit of the model has a significant p value (p = 2.2e-16).
+
+Year significantly predicts US salmon imports (b= 7550, t(26)= 21.72, p<0.0001) with a strong positive correlation betwen the two (Pearson's r = 0.97). The overall model (width = 7550 (length) = -1.498e+07 in number of fish) explains a significant amount of variance in salmon import amounts (F(1,26)= 479, p<0.0001 R squared = 0.94)
